@@ -1,5 +1,4 @@
 from enum import Enum,auto
-
 class TokenType(Enum):
   OR = auto()
   STAR = auto()
@@ -11,7 +10,6 @@ class TokenType(Enum):
   CLOSED_SQUARE_BRACKET = auto()
   DASH = auto()
   LITERAL = auto()
-  
 def getTypeToken(token):
     if token == '|':
         return TokenType.OR
@@ -33,7 +31,6 @@ def getTypeToken(token):
         return TokenType.DASH
     else:
         return TokenType.LITERAL
-    
 def getTokenValue(token):
     if token==TokenType.OR:
         return '|'
@@ -68,10 +65,14 @@ class regexLexer:
     # output: token stream
     def __init__(self, regexStr):
         self.regexStr = regexStr
-        
     def lexer(self):
         tokenStream = []
         for i in range(len(self.regexStr)):
             token = Token(getTypeToken(self.regexStr[i]), self.regexStr[i])
             tokenStream.append(token)
         return tokenStream
+    
+# regexLexer = regexLexer('a|b')
+# tokenStream = regexLexer.lexer()
+# for token in tokenStream:
+#     print(token.ttype, token.content)

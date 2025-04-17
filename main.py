@@ -1,13 +1,14 @@
-import streamlit as st
-from lexer import *
-from parser import *
-from AST import *
-from NFA import *
-from visualize import *
-from DFA import *
-from minizedDFA import *
-
 import re
+import streamlit as st
+
+# Import your own modules
+from lexer import *
+from AST import *
+from parser import *
+from NFA import *
+from DFA import *
+from minimizedDFA import *
+from visualize import *
 
 def is_valid_regex(regex):
     try:
@@ -15,59 +16,91 @@ def is_valid_regex(regex):
         return True
     except re.error:
         return False
-
-def regex_to_minimized_dfa(regex):
     
-    # Step 1: Validate the regex
-    if not is_valid_regex(regex):
-        st.error("Invalid regex")
-        return
-    
-    # Step 2: Process the regex to generate NFA, DFA, and Minimized DFA
-    st.write('Req 1: regex to NFA')
+def req1(regex):
+    print('Req 1 : regex to NFA')
     regexlexer = regexLexer(regex)
     tokenStream = regexlexer.lexer()
-    st.write(f'AST for regex: {regex}')
+   
     parseRegex = ParseRegex(tokenStream)
-    
+    ## handle Exception
+    throwException = False
     try:
         AST = parseRegex.parse()
     except Exception as e:
-        st.error(f"Error in parsing regex: {e}")
+        print(e)
+        throwException = True
+    if throwException:
+        print('Invalid regex')
         return
-    
-    st.write("AST:")
     print_ast(AST)
-    
-    # Convert the AST to NFA
     nfa = ThompsonConstruction(AST).construct().to_dict()
     save_json(nfa, "nfa.json")
-    st.write("NFA for regex:")
-    display_and_save_image(nfa, "nfa_graph")
-    
-    # Step 3: Convert NFA to DFA
-    st.write('Req 2: NFA to minimized DFA')
+    print('NFA for regex: ', regex)
+    display_and_save_image(nfa,"nfa_graph")
+
+def req2(regex):
+    print('Req 2 : NFA to minimized DFA')
+    regexlexer = regexLexer(regex)
+    tokenStream = regexlexer.lexer()
+    print('AST for regex: ', regex)
+    parseRegex = ParseRegex(tokenStream)
+    ## handle Exception
+    throwException = False
+    try:
+        AST = parseRegex.parse()
+    except Exception as e:
+        print(e)
+        throwException = True
+    if throwException:
+        print('Invalid regex')
+
+    nfa = ThompsonConstruction(AST).construct().to_dict()
     converter = NFAtoDFAConverter(nfa)
     dfa = converter.convert().to_dict()
     save_json(dfa, "dfa.json")
-    st.write("DFA for regex:")
-    display_and_save_image(dfa, "dfa_graph")
-    
-    # Step 4: Minimize the DFA
+    display_and_save_image(dfa,"dfa_graph")
+
     minimizer = DFAMinimizer(dfa).to_dict()
     save_json(minimizer, "minimized_dfa.json")
-    st.write("Minimized DFA for regex:")
-    display_and_save_image(minimizer, "minimized_dfa_graph")
+    display_and_save_image(minimizer,"minimized_dfa_graph")
+    
+    return AST
 
-# Streamlit app UI
-st.title('Regex to NFA, DFA, and Minimized DFA Visualization')
+def visualize_regex(regex):
+    
+    req1(regex)
+    req2(regex)
+    
+def plot_image(file_name):
+    try:
+        img = mpimg.imread(file_name + '.png')
+        fig = plt.figure(figsize=(10, 10))
+        plt.imshow(img)
+        plt.axis('off')
+        st.pyplot(fig)
+    except FileNotFoundError:
+        st.error(f"Image file '{file_name}.png' not found. Make sure the graph was rendered and saved correctly.")
+        
+# ---------------------------
+# Streamlit UI
+# ---------------------------
+st.title("Regex to Minimized DFA Visualizer")
 
-# Step 1: Input field for regex
-regex_input = st.text_input("Enter a regex:")
+regex = st.text_input("Enter a regular expression:", "ab(b|c)*d+")
 
-# Step 2: Button to trigger processing
-if st.button('Generate NFA, DFA, and Minimized DFA'):
-    if regex_input:
-        regex_to_minimized_dfa(regex_input)
+if st.button("Generate DFA"):
+    if not is_valid_regex(regex):
+        st.error("Invalid regular expression.")
     else:
-        st.error("Please enter a valid regex.")
+        visualize_regex(regex)
+
+        st.subheader("NFA Graph")
+        plot_image('nfa_graph')
+
+        st.subheader("DFA Graph")
+        plot_image('dfa_graph')
+
+        st.subheader("Minimized DFA Graph")
+        plot_image('minimized_dfa_graph')
+

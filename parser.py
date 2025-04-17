@@ -1,5 +1,22 @@
 from lexer import *
 from AST import *
+## let's define a CFG for the language
+# S -> E
+# E -> T '|' E | T
+# T -> C F T | C
+# F -> '*' | '+' | '?' | epsilon
+# C -> L | '(' E ')' | '[' L DASH L ']' | epsilon
+# L -> LITERAL | ESCAPED
+# OR -> '|' | epsilon
+# STAR -> '*' | epsilon
+# PLUS -> '+' | epsilon
+# QUESTION_MARK -> '?' | epsilon
+# OPEN_PAREN -> '(' | epsilon
+# CLOSED_PAREN -> ')' | epsilon
+# OPEN_SQUARE_BRACKET -> '[' | epsilon
+# CLOSED_SQUARE_BRACKET -> ']' | epsilon
+# DASH -> '-' | epsilon
+# LITERAL -> any character except '|' '*', '+', '?', '(', ')', '[', ']', '\\', and '-' 
 
 class ParseRegex:
     def __init__(self, tokenStream):
@@ -86,3 +103,4 @@ class ParseRegex:
     def expect(self, ttype):
         if not self.match(ttype):
             raise Exception("Expected token", getTokenValue(ttype))
+        

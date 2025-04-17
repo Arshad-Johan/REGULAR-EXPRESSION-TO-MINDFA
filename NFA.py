@@ -1,5 +1,5 @@
 from collections import deque
-from AST import *
+from parser import *
 
 class NFA:
     def __init__(self, starting_state,final_state, states):
@@ -134,4 +134,4 @@ class ThompsonConstruction:
                 final_state: {'': set()}
             }
             return starting_state, final_state, states
-
+        

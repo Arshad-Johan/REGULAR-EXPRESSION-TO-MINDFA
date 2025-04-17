@@ -14,27 +14,25 @@ class SeqAstNode(AstNode):
     def __init__(self, left, right):
         self.left = left
         self.right = right
-        
 class StarAstNode(AstNode):
     def __init__(self, left):
         self.left = left
-        
 class PlusAstNode(AstNode):
     def __init__(self, left):
         self.left = left
-        
 class QuestionMarkAstNode(AstNode):
     def __init__(self, left):
         self.left = left
-        
 class LiteralCharacterAstNode(AstNode):
     def __init__(self, char):
         self.char = char
-        
 class SquareBracketAstNode(AstNode):
+    # clas: set #of strs and pairs
+    # for example: [a-z] -> {'a', 'b', 'c', ..., 'z'}
+    # [a-z0-9] -> {'a', 'b', 'c', ..., 'z', '0', '1', ..., '9'
+    # [a-Z012] -> {'a', 'b', 'c', ..., 'Z', '0', '1', '2'}
     def __init__(self, clas):
         self.clas = clas
-        
 def print_ast(node, indent=0):
     if isinstance(node, OrAstNode):
         print(' ' * indent + 'OR')
