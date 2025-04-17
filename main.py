@@ -1,106 +1,64 @@
-import re
 import streamlit as st
+from regex_lexer import Tokenizer
+from regex_parser import RegexParser
+from regex_ast import debug_ast_structure
+from nfa_builder import ThompsonBuilder
+from dfa_converter import NFAtoDFA
+from dfa_minimizer import DFAReducer
+from automata_visualizer import save_to_json, render_automata_image
 
-# Import your own modules
-from lexer import *
-from AST import *
-from parser import *
-from NFA import *
-from DFA import *
-from minimizedDFA import *
-from visualize import *
+import re
 
-def is_valid_regex(regex):
+def validate_regex(expression):
     try:
-        re.compile(regex)
+        re.compile(expression)
         return True
     except re.error:
         return False
-    
-def req1(regex):
-    print('Req 1 : regex to NFA')
-    regexlexer = regexLexer(regex)
-    tokenStream = regexlexer.lexer()
-   
-    parseRegex = ParseRegex(tokenStream)
-    ## handle Exception
-    throwException = False
-    try:
-        AST = parseRegex.parse()
-    except Exception as e:
-        print(e)
-        throwException = True
-    if throwException:
-        print('Invalid regex')
+
+def process_regex_pipeline(expression):
+    if not validate_regex(expression):
+        st.error("Invalid regular expression format.")
         return
-    print_ast(AST)
-    nfa = ThompsonConstruction(AST).construct().to_dict()
-    save_json(nfa, "nfa.json")
-    print('NFA for regex: ', regex)
-    display_and_save_image(nfa,"nfa_graph")
 
-def req2(regex):
-    print('Req 2 : NFA to minimized DFA')
-    regexlexer = regexLexer(regex)
-    tokenStream = regexlexer.lexer()
-    print('AST for regex: ', regex)
-    parseRegex = ParseRegex(tokenStream)
-    ## handle Exception
-    throwException = False
+    st.write("🔁 Converting Regex to NFA")
+    tokenizer = Tokenizer(expression)
+    token_stream = tokenizer.tokenize()
+
+    parser = RegexParser(token_stream)
     try:
-        AST = parseRegex.parse()
-    except Exception as e:
-        print(e)
-        throwException = True
-    if throwException:
-        print('Invalid regex')
+        ast_tree = parser.parse()
+    except Exception as err:
+        st.error(f"Parsing Error: {err}")
+        return
 
-    nfa = ThompsonConstruction(AST).construct().to_dict()
-    converter = NFAtoDFAConverter(nfa)
-    dfa = converter.convert().to_dict()
-    save_json(dfa, "dfa.json")
-    display_and_save_image(dfa,"dfa_graph")
+    st.write("📐 AST Structure:")
+    debug_ast_structure(ast_tree)
 
-    minimizer = DFAMinimizer(dfa).to_dict()
-    save_json(minimizer, "minimized_dfa.json")
-    display_and_save_image(minimizer,"minimized_dfa_graph")
-    
-    return AST
+    nfa_graph = ThompsonBuilder(ast_tree).construct_nfa()
+    nfa_dict = nfa_graph.to_dict()
+    save_to_json(nfa_dict, "output_nfa.json")
+    render_automata_image(nfa_dict, "nfa_diagram", is_nfa=True)
 
-def visualize_regex(regex):
-    
-    req1(regex)
-    req2(regex)
-    
-def plot_image(file_name):
-    try:
-        img = mpimg.imread(file_name + '.png')
-        fig = plt.figure(figsize=(10, 10))
-        plt.imshow(img)
-        plt.axis('off')
-        st.pyplot(fig)
-    except FileNotFoundError:
-        st.error(f"Image file '{file_name}.png' not found. Make sure the graph was rendered and saved correctly.")
-        
-# ---------------------------
-# Streamlit UI
-# ---------------------------
-st.title("Regex to Minimized DFA Visualizer")
+    st.write("⚙️ Translating NFA to DFA")
+    dfa = NFAtoDFA(nfa_dict).convert_to_dfa()
+    dfa_dict = dfa.to_serialized_dict()
+    save_to_json(dfa_dict, "output_dfa.json")
+    render_automata_image(dfa_dict, "dfa_diagram", is_nfa=False)
 
-regex = st.text_input("Enter a regular expression:", "ab(b|c)*d+")
+    st.write("🧹 Minimizing DFA")
+    minimized = DFAReducer(dfa_dict).to_dict()
+    save_to_json(minimized, "output_min_dfa.json")
+    render_automata_image(minimized, "min_dfa_diagram", is_nfa=False)
 
-if st.button("Generate DFA"):
-    if not is_valid_regex(regex):
-        st.error("Invalid regular expression.")
+# ─────────────────────────────────────
+# STREAMLIT UI
+# ─────────────────────────────────────
+st.title("Regex to NFA, DFA, and Minimized DFA 🔍")
+user_input = st.text_input("Enter your regular expression below:")
+
+if st.button("Visualize Automata"):
+    if user_input:
+        process_regex_pipeline(user_input)
     else:
-        visualize_regex(regex)
-
-        st.subheader("NFA Graph")
-        plot_image('nfa_graph')
-
-        st.subheader("DFA Graph")
-        plot_image('dfa_graph')
-
-        st.subheader("Minimized DFA Graph")
-        plot_image('minimized_dfa_graph')
-
+        st.warning("Please enter a regex to begin.")
